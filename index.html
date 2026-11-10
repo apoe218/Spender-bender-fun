@@ -24,7 +24,7 @@ body{min-height:100vh;background:
   background-attachment:fixed}
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--mint);text-decoration:none}
-#app{max-width:640px;margin:0 auto;padding:16px 16px calc(96px + var(--safe-b))}
+#app{max-width:640px;margin:0 auto;padding:16px 16px calc(140px + var(--safe-b))}
 h1,h2,h3{margin:0}
 
 /* header */
@@ -118,6 +118,17 @@ textarea{min-height:70px;resize:vertical}
 .sugg h4{margin:16px 0 2px;font-size:13px;color:var(--gold);text-transform:uppercase;letter-spacing:.6px}
 .plus{width:38px;height:38px;border-radius:50%;border:0;background:var(--green);color:#fff;font-size:22px;cursor:pointer;flex:none}
 .plus.done{background:var(--bg2);color:var(--mint);border:1px solid var(--line)}
+.fab{position:fixed;right:16px;bottom:calc(78px + var(--safe-b));z-index:30;background:linear-gradient(135deg,var(--gold),#d9a032);color:#1a1405;border:0;font-weight:700;padding:12px 18px;border-radius:99px;box-shadow:0 8px 22px rgba(0,0,0,.45);cursor:pointer}
+#toast{position:fixed;left:50%;bottom:calc(140px + var(--safe-b));transform:translateX(-50%);background:var(--mint);color:#062014;padding:10px 16px;border-radius:99px;font-weight:600;z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap}
+#toast.show{opacity:1}
+.chart{width:100%;height:auto;display:block;margin:6px 0 10px}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+.mini div{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.mini small{display:block;color:var(--muted);font-size:11px;text-transform:uppercase}
+.qa-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.qa-row input[type=checkbox]{width:22px;height:22px;margin-top:2px;flex:none;accent-color:var(--green)}
+.qa-row select{padding:6px 8px;font-size:14px;width:auto;max-width:48%;margin-top:6px;margin-right:6px}
+.qa-h{color:var(--gold);font-size:13px;text-transform:uppercase;letter-spacing:.6px;margin:16px 0 2px}
 .snow{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
 .snow i{position:absolute;top:-10px;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.35);animation:fall linear infinite}
 @keyframes fall{to{transform:translateY(105vh) translateX(30px)}}
@@ -134,6 +145,8 @@ nav{position:fixed}
   <button data-act="nav" data-v="list"><span>🛒</span>Shopping</button>
   <button data-act="nav" data-v="settings"><span>⚙️</span>Settings</button>
 </div></nav>
+<button class="fab" data-act="quick">✨ Quick add</button>
+<div id="toast"></div>
 <div id="sheet"></div>
 
 <script>
@@ -236,6 +249,7 @@ function giftCard(g,showPerson){
     </div>
     ${g.notes?`<div class="notes">${esc(g.notes)}</div>`:''}
     <div class="acts"><button class="tiny" data-act="price" data-id="${g.id}">💲 Update price</button>
+      <button class="tiny" data-act="hist" data-id="${g.id}">📈 History${(g.history||[]).length>1?' ('+g.history.length+')':''}</button>
       <button class="tiny" data-act="editGift" data-id="${g.id}">✏️ Edit</button></div>
   </div>`;
 }
@@ -400,6 +414,264 @@ function suggestSheet(p){
   <button class="btn-ghost" style="width:100%;margin-top:16px" data-act="close">Done</button>`);
 }
 
+/* ---------- price history ---------- */
+function setPrice(g,p){
+  if(!g.history)g.history=[];
+  if(!g.history.length&&num(g.price))g.history.push({p:num(g.price),d:g.added||today()});
+  g.history.push({p,d:today()});g.price=p;
+}
+function chartSVG(g){
+  const h=g.history||[],W=320,H=130,L=48,R=12,T=14,B=22;
+  const vals=h.map(x=>x.p),tg=num(g.target);
+  const rLo=Math.min(...vals),rHi=Math.max(...vals);
+  let lo=Math.min(rLo,tg||rLo),hi=Math.max(rHi,tg||rHi);
+  const flat=hi===lo;if(flat){lo-=1;hi+=1}
+  const x=i=>L+(h.length===1?(W-L-R)/2:i*(W-L-R)/(h.length-1));
+  const y=v=>T+(hi-v)*(H-T-B)/(hi-lo);
+  const pts=h.map((e,i)=>x(i).toFixed(1)+','+y(e.p).toFixed(1)).join(' ');
+  const mut='fill:var(--muted);font-size:10px';
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Price history chart">
+   <polygon points="${x(0)},${H-B} ${pts} ${x(h.length-1)},${H-B}" style="fill:var(--green);opacity:.2"/>
+   ${tg?`<line x1="${L}" x2="${W-R}" y1="${y(tg)}" y2="${y(tg)}" style="stroke:var(--gold);stroke-dasharray:4 4;stroke-width:1"/><text x="${W-R}" y="${y(tg)-3}" text-anchor="end" style="fill:var(--gold);font-size:9px">target ${money(tg)}</text>`:''}
+   <polyline points="${pts}" style="fill:none;stroke:var(--mint);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round"/>
+   ${h.map((e,i)=>`<circle cx="${x(i)}" cy="${y(e.p)}" r="${i===h.length-1?5:3.5}" style="fill:${i===h.length-1?'var(--gold)':'var(--mint)'}"/>`).join('')}
+   ${flat?`<text x="${L-6}" y="${y(rHi)+3}" text-anchor="end" style="${mut}">${money(rHi)}</text>`:`<text x="${L-6}" y="${y(hi)+3}" text-anchor="end" style="${mut}">${money(hi)}</text><text x="${L-6}" y="${y(lo)+3}" text-anchor="end" style="${mut}">${money(lo)}</text>`}
+   <text x="${L}" y="${H-6}" style="${mut}">${esc(h[0].d.slice(5))}</text>
+   <text x="${W-R}" y="${H-6}" text-anchor="end" style="${mut}">${esc(h[h.length-1].d.slice(5))}</text></svg>`;
+}
+function historySheet(g){
+  const h=g.history||[];
+  if(!h.length){
+    sheet(`<h3>📈 Price history</h3><p class="sub" style="margin-top:-6px">${esc(g.name)}</p>
+      <div class="empty">No prices logged yet. Log one to start tracking changes.</div>
+      <button class="btn-main" style="margin-top:12px" data-act="price" data-id="${g.id}">💲 Log a price</button>
+      <button class="btn-ghost" style="width:100%;margin-top:10px" data-act="close">Close</button>`);return;
+  }
+  const vals=h.map(x=>x.p),lo=Math.min(...vals),hi=Math.max(...vals),cur=num(g.price);
+  const chg=vals[vals.length-1]-vals[0],pct=vals[0]?Math.abs(chg/vals[0]*100):0;
+  const rows=h.map((e,i)=>({e,i,d:i?e.p-h[i-1].p:null})).reverse();
+  sheet(`<h3>📈 Price history</h3><p class="sub" style="margin-top:-6px">${esc(g.name)}</p>
+    ${chartSVG(g)}
+    <div class="mini"><div><small>Now</small><b>${money(cur)}</b></div><div><small>Lowest</small><b style="color:var(--mint)">${money(lo)}</b></div><div><small>Highest</small><b>${money(hi)}</b></div></div>
+    ${h.length>1?`<div class="sub">${chg?`${chg<0?'▼':'▲'} ${money(Math.abs(chg))} (${pct.toFixed(0)}%) since first logged`:'No change since first logged'}${cur===lo&&chg<0?' · 🔥 lowest price so far':''}</div>`:'<div class="sub">Only one price logged so far — update the price whenever you see it change.</div>'}
+    <label>Log</label>
+    ${rows.map(r=>`<div class="sugg"><div class="t">${esc(r.e.d)}</div>${r.d?`<span class="chip ${r.d<0?'drop':'rise'}">${r.d<0?'▼':'▲'} ${money(Math.abs(r.d))}</span>`:''}<b>${money(r.e.p)}</b>${h.length>1?`<button class="tiny" data-act="delHist" data-id="${g.id}" data-i="${r.i}" aria-label="Remove entry">✕</button>`:''}</div>`).join('')}
+    <div class="row2" style="margin-top:14px"><button class="btn-ghost" data-act="close">Close</button><button class="btn-main" data-act="price" data-id="${g.id}">💲 Log new price</button></div>`);
+}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2400)}
+
+/* ---------- quick add: paste anything ---------- */
+// Pattern-based reader that runs entirely in your browser (no AI service, nothing leaves the page).
+const RELS='mom|dad|mother|father|sister|brother|wife|husband|son|daughter|grandma|grandpa|grandmother|grandfather|aunt|uncle|cousin|niece|nephew|boss|friend|teacher|girlfriend|boyfriend|partner';
+const STOPN=new Set('a an the get buy bought got order ordered maybe also idea gift gifts for and or to his her him them their my some need want wanted plus then budget target note notes he she they it this that new now amazon walmart etsy costco ikea kohls macys nike apple best home christmas total overall'.split(' '));
+const RETAIL="Amazon|Target|Walmart|Best Buy|Etsy|Costco|Ikea|Kohl's|Macy's|Home Depot|Lowe's|Nordstrom|Sephora|Ulta|Barnes and Noble|GameStop|Walgreens|CVS|Dick's|Michaels|Hobby Lobby|Joann|REI|Wayfair|eBay|Old Navy|Nike|Lego";
+const NUM=String.raw`(\d[\d,]*(?:\.\d+)?)`;
+const RX=(src,f='i')=>new RegExp(src,f);
+const n2=v=>parseFloat(String(v).replace(/,/g,''))||0;
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const escRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const URLRE=/\b(?:https?:\/\/|www\.)[^\s<>"')]+|\b[a-z0-9][a-z0-9-]*\.(?:com|net|org|co|io|shop|store|us)\/[^\s<>"')]*/gi;
+const R_TARGET=RX(String.raw`\b(?:target(?:\s+price)?|under|below|buy\s+(?:at|when|if)|drops?\s+(?:to|below)|wait(?:ing)?\s+for|alert(?:\s+at)?|hoping\s+for)\s*(?:is|of|:|=|at|to)?\s*\$?\s*${NUM}`);
+const R_WASNOW=RX(String.raw`\bwas\s*\$?\s*${NUM}[^\d$]{0,14}?(?:now|is|->|→|=>)\s*\$?\s*${NUM}`);
+const R_NOWWAS=RX(String.raw`\bnow\s*\$?\s*${NUM}[^\d$]{0,8}\(?\s*was\s*\$?\s*${NUM}\)?`);
+const R_NOWP=RX(String.raw`\b(?:now|dropped\s+to|down\s+to|went\s+up\s+to|up\s+to|price(?:\s+changed)?\s+to|raised\s+to|marked\s+down\s+to|on\s+sale\s+(?:for|at))\s*\$?\s*${NUM}`);
+const R_SHIP1=RX(String.raw`\+?\s*\$?\s*${NUM}\s*(?:shipping|ship|tax|s&h)\b`);
+const R_SHIP2=RX(String.raw`\b(?:shipping|ship|tax)\s*(?:is|of|:|=)?\s*\$?\s*${NUM}`);
+const R_PRICES=[RX(String.raw`\$\s*${NUM}`),RX(String.raw`(?:\b(?:for|at|about|around|approx\.?|roughly|costs?|is)|[@~])\s*\$?\s*${NUM}\b(?!\s*%)`),RX(String.raw`${NUM}\s*(?:bucks|dollars|usd)\b`),RX(String.raw`(?:^|\s)${NUM}\s*[.)]?\s*$`)];
+const R_AGE1=/\(\s*(\d{1,2})\s*\)|\b(?:aged?\s*:?\s*)(\d{1,2})\b|\b(\d{1,2})\s*(?:yo|y\/o|yrs?|years?)[\s-]*(?:old)?\b/i;
+const R_AGE2=/^\s*(?:is\s+)?(\d{1,2})\b(?=\s*(?:[,:\-–—.]|yo\b|y\/o|and\b|who\b|$)|\s+(?:loves?|likes?|with|budget))/i;
+const R_BUDGET=RX(String.raw`\b(?:budget|spend(?:ing)?(?:\s+up\s+to)?)\s*(?:of|is|:|=|around|about)?\s*\$?\s*${NUM}(?:\s*(?:bucks|dollars))?|\$\s*${NUM}\s*budget`);
+const R_LIKES=/\b(?:is\s+into|are\s+into|loves?|likes?|enjoys?|into|obsessed\s+with|fan\s+of|hobbies(?:\s+are)?|interests?(?:\s+are)?)\s*:?\s+(.+?)(?=\s*(?:$|[.:;(]|\s[-–—]\s|\bbudget\b|\bgot\b|\bget\b|\bbuy\b|\bbought\b|\border|\$|¤))/i;
+const FILL=new Set('wrapped arrived delivered received ordered purchased bought paid got get buy need should maybe idea consider thinking might could possibly plan going gift for from at on via a an the her him them his their some new also now is was price about around only just it to and or with my our please'.split(' '));
+
+function findPerson(s,known){
+  for(const p of known){
+    const re=RX(String.raw`(^|[^A-Za-z])${escRe(p.name)}(?![A-Za-z])`);
+    if(re.test(s))return{p,text:s.replace(re,'$1 ')};
+  }
+  const mk=(name,text)=>{
+    const lc=name.toLowerCase();
+    if(STOPN.has(lc)||RX('^(?:'+RETAIL+')$').test(name))return null;
+    const p={key:'new:'+lc,name,isNew:true};known.push(p);return{p,text};
+  };
+  let m=s.match(/^\s*(?:for\s+)?(?:my\s+)?([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)(?=\s*(?:[:\-–—(,]|$)|\s+(?:is|loves?|likes?|wants?|has|budget)\b|\s+\d{1,2}(?=\s*(?:[,:\-–—]|yo\b|y\/o|years?|yrs?)))/);
+  if(m){const r=mk(m[1],s.slice(m[0].length));if(r)return r}
+  m=s.match(RX(String.raw`^\s*(?:for\s+)?(?:my\s+)?(${RELS})\b(?=\s*(?:[:\-–—(,]|$)|\s+(?:is|loves?|likes?|wants?|has|budget)\b|\s+\d{1,2}(?=\s*(?:[,:\-–—]|yo\b)))`));
+  if(m){const r=mk(cap(m[1].toLowerCase()),s.slice(m[0].length));if(r)return r}
+  m=s.match(RX(String.raw`\bfor\s+(?:my\s+)?(${RELS})\b`));
+  if(m){
+    const rest=s.slice(m.index+m[0].length),nm=rest.match(/^\s+([A-Z][a-z]+)\b/);
+    if(nm&&!STOPN.has(nm[1].toLowerCase())&&!RX('^(?:'+RETAIL+')$').test(nm[1])){const r=mk(nm[1],s.slice(0,m.index)+' '+rest.slice(nm[0].length));if(r)return r}
+    const r=mk(cap(m[1].toLowerCase()),s.replace(m[0],' '));if(r)return r}
+  m=s.match(/\bfor\s+([A-Z][a-z]+)\b/);
+  if(m){const r=mk(m[1],s.replace(m[0],' '));if(r)return r}
+  return null;
+}
+const toks=s=>new Set(s.toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(w=>w.length>2).map(w=>w.replace(/s$/,'')));
+function matchGift(name,cands){
+  const a=toks(name);if(!a.size)return null;let best=null,bs=0;
+  cands.forEach(g=>{const b=toks(g.name);if(!b.size)return;let c=0;a.forEach(w=>b.has(w)&&c++);
+    const m=Math.min(a.size,b.size),sc=c/m;
+    if(c>=1&&(c>=2||m===1)&&sc>=.66&&sc>bs){bs=sc;best=g}});
+  return best;
+}
+function parsePiece(p,urls){
+  let g=' '+p+' ',m;
+  const o={price:0,ship:0,target:0,url:'',where:'online',store:'',status:null,hist:null,name:''};
+  g=g.replace(/¤(\d+)¤/g,(x,i)=>{if(!o.url)o.url=urls[+i];return ' '});
+  if(/\b(?:in[\s-]?store|in[\s-]?person|store\s+pick-?up)\b/i.test(g)){o.where='store';g=g.replace(/\b(?:in[\s-]?store|in[\s-]?person|store\s+pick-?up)\b/ig,' ')}
+  if(m=g.match(RX(String.raw`(?:\b(?:at|from|via|on)|@)\s*(${RETAIL})\b(?:\s+store)?`))){o.store=cap(m[1]);g=g.replace(m[0],' ')}
+  else if(o.where==='store'&&(m=g.match(/\b(?:at|from)\s+([A-Z][\w'’&.-]*(?:\s[A-Z][\w'’&.-]*)?)/))){o.store=m[1];g=g.replace(m[0],' ')}
+  if(m=g.match(R_TARGET)){o.target=n2(m[1]);g=g.replace(m[0],' ')}
+  if(m=g.match(R_WASNOW)){o.hist=[n2(m[1]),n2(m[2])];o.price=n2(m[2]);g=g.replace(m[0],' ')}
+  else if(m=g.match(R_NOWWAS)){o.hist=[n2(m[2]),n2(m[1])];o.price=n2(m[1]);g=g.replace(m[0],' ')}
+  else if(m=g.match(R_NOWP)){o.price=n2(m[1]);g=g.replace(m[0],' ')}
+  g=g.replace(/\bfree\s+(?:shipping|delivery)\b/ig,' ');
+  if(m=(g.match(R_SHIP1)||g.match(R_SHIP2))){o.ship=n2(m[1]);g=g.replace(m[0],' ')}
+  if(!o.price)for(const re of R_PRICES){if(m=g.match(re)){o.price=n2(m[1]);g=g.replace(m[0],' ');break}}
+  if(/\bwrapped\b/i.test(g))o.status='wrapped';
+  else if(/\b(?:arrived|delivered|received|came\s+in|got\s+here|is\s+here)\b/i.test(g))o.status='delivered';
+  else if(/\b(?:ordered|purchased|bought|paid\s+for|got)\b/i.test(g))o.status='ordered';
+  else if(/\b(?:maybe|idea|consider|thinking|might|could|possibly)\b/i.test(g))o.status='idea';
+  else if(/\b(?:get|buy|need|should|plan|going\s+to|must)\b/i.test(g))o.status='buy';
+  const w=g.replace(/[()\[\]{}"“”¤@~$]/g,' ').replace(/[.,;:!?]+(\s|$)/g,' ').replace(/\s[-–—]+\s/g,' ').split(/\s+/).filter(Boolean);
+  while(w.length&&FILL.has(w[0].toLowerCase()))w.shift();
+  while(w.length&&FILL.has(w[w.length-1].toLowerCase()))w.pop();
+  o.name=cap(w.join(' ').trim()).slice(0,80);
+  return o;
+}
+function parseText(src,defPid){
+  const urls=[];
+  let t=src.replace(URLRE,m=>{m=m.replace(/[.,;:!?]+$/,'');urls.push(fixUrl(m));return ' ¤'+(urls.length-1)+'¤ '});
+  t=t.replace(/([.!?])\s+(?=[A-Z])/g,'$1\n');
+  const segs=t.split(/\n+|;|•/).map(x=>x.replace(/^\s*(?:[-*•]|\d+[.)])\s+/,'').trim()).filter(Boolean);
+  const known=S.people.map(p=>({key:p.id,name:p.name,isNew:false}));
+  const pops={},res={people:[],gifts:[],dupes:0,overall:0};
+  let sticky=S.people.some(p=>p.id===defPid)?defPid:null;
+  const PO=k=>pops[k]||(pops[k]={key:k,name:(known.find(x=>x.key===k)||{}).name,isNew:k.startsWith('new:'),age:'',budget:0,likes:[]});
+  for(const seg of segs){
+    let s=seg;
+    const om=s.match(RX(String.raw`\b(?:overall|total)\s+(?:christmas\s+|gift\s+)?budget\D{0,12}?${NUM}`));
+    if(om){res.overall=n2(om[1]);continue}
+    const f=findPerson(s,known);let pk=sticky,fresh=false;
+    if(f){pk=f.p.key;s=f.text;sticky=pk;fresh=true}
+    s=s.replace(/(^|\s)['’]s\b/g,'$1');
+    let age='',budget=0,likes=[],m;
+    s=s.replace(R_AGE1,(x,a,b,c)=>{age=a||b||c;return ' '});
+    if(!age&&fresh&&(m=s.match(R_AGE2))){age=m[1];s=s.slice(m[0].length)}
+    s=s.replace(R_BUDGET,(x,a,b)=>{budget=n2(a||b);return ' '});
+    if(m=s.match(R_LIKES)){likes=m[1].split(/,|\band\b|&|\//i).map(x=>x.trim()).filter(x=>x.length>1&&x.length<=30).slice(0,8);s=s.replace(m[0],' ')}
+    s=s.replace(/^[\s:,\-–—.]+|[\s:,\-–—.]+$/g,'');
+    if(!likes.length&&fresh&&(m=s.match(/^([^$¤\d:–—-]{2,60}?)\s*(?::|[–—]|\s-\s)\s*(.+)$/))&&/[a-z]{3}/i.test(m[2])&&m[1].split(/\s+/).length<=4){
+      likes=m[1].split(/,|\band\b|&/i).map(x=>x.trim()).filter(x=>x.length>1);s=m[2];
+    }
+    if(pk&&(fresh&&pk.startsWith('new:')||(age&&+age<=110)||budget||likes.length)){
+      const o=PO(pk);if(age&&+age<=110)o.age=age;if(budget)o.budget=budget;
+      likes.forEach(l=>{if(!o.likes.some(x=>x.toLowerCase()===l.toLowerCase()))o.likes.push(l)});
+    }
+    if(!s.trim())continue;
+    let pieces=[s];const sp=s.split(/\s*(?:,|\band\b)\s*/).filter(x=>x.trim());
+    if(sp.length>1&&sp.every(x=>/\d|¤/.test(x)))pieces=sp;
+    for(const pc of pieces){
+      const o=parsePiece(pc,urls);if(o.name.length<2||/^\d+$/.test(o.name))continue;
+      const cands=pk&&!pk.startsWith('new:')?S.gifts.filter(g=>g.pid===pk):pk?[]:S.gifts;
+      const ex=matchGift(o.name,cands);
+      if(ex){
+        const ch={};
+        if(o.price&&o.price!==num(ex.price))ch.price=o.price;
+        if(o.status&&o.status!==ex.status)ch.status=o.status;
+        if(o.url&&o.url!==ex.url)ch.url=o.url;
+        if(o.target&&o.target!==num(ex.target))ch.target=o.target;
+        if(o.ship&&o.ship!==num(ex.ship))ch.ship=o.ship;
+        if(Object.keys(ch).length)res.gifts.push({kind:'upd',id:ex.id,gname:ex.name,changes:ch});else res.dupes++;
+      }else res.gifts.push({kind:'new',pk,...o});
+    }
+  }
+  Object.values(pops).forEach(p=>{
+    if(!p.isNew){
+      const ex=S.people.find(x=>x.id===p.key);if(!ex)return;
+      if(p.age&&String(p.age)===String(ex.age))p.age='';
+      if(p.budget&&p.budget===num(ex.budget))p.budget=0;
+      p.likes=p.likes.filter(l=>!(ex.likes||[]).some(x=>x.toLowerCase()===l.toLowerCase()));
+      if(!p.age&&!p.budget&&!p.likes.length)return;
+    }
+    res.people.push(p);
+  });
+  return res;
+}
+function emojiFor(name,age){
+  const a=age===''?null:+age,n=name.toLowerCase();
+  const fem=/\b(mom|mother|sister|wife|daughter|grandma|grandmother|aunt|niece|girlfriend)\b/.test(n),mal=/\b(dad|father|brother|husband|son|grandpa|grandfather|uncle|nephew|boyfriend)\b/.test(n);
+  if(a!=null&&a<=3)return'👶';
+  if(fem)return a>=65||/grand/.test(n)?'👵':a!=null&&a<18?'👧':'👩';
+  if(mal)return a>=65||/grand/.test(n)?'👴':a!=null&&a<18?'👦':'👨';
+  return'🎁';
+}
+let QA={text:'',res:null,def:null};
+function quickSheet(def){
+  QA.def=def;const p=S.people.find(x=>x.id===def);
+  sheet(`<h3>✨ Quick add</h3>
+  <p class="sub" style="margin-top:-6px">Paste or type ideas however you like${p?` — new gifts go to <b>${esc(p.name)}</b> unless you name someone else`:''}. You'll get a preview before anything is saved.</p>
+  <textarea id="qa" style="min-height:170px" placeholder="${esc('Mom (58) loves gardening & coffee, budget $100\nherb garden kit $40 https://amazon.com/… target $30\nJake 12, gaming - Xbox controller 50 at Target in store\nLEGO set now $32 (was $40)')}">${esc(QA.text)}</textarea>
+  <div class="hint">Works for people (age, interests, budget), new gifts (price, link, store, target, status) and updates to gifts already on your list (“LEGO set now $32”, “ordered the herb kit”). It runs in your browser — nothing is sent anywhere.</div>
+  <div class="row2" style="margin-top:14px"><button class="btn-ghost" data-act="close">Cancel</button><button class="btn-main" data-act="qaParse">Read it ✨</button></div>`);
+}
+function qaPreview(){
+  const R=QA.res,q=encodeURIComponent;
+  const pOpts=sel=>S.people.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${esc(p.name)}</option>`).join('')+R.people.filter(p=>p.isNew).map(p=>`<option value="${esc(p.key)}" ${p.key===sel?'selected':''}>${esc(p.name)} (new)</option>`).join('');
+  const rows=[];
+  if(R.overall)rows.push(`<div class="qa-row"><input type="checkbox" data-qa="o" checked><div class="grow"><b>💰 Set overall budget</b><div class="sub">${money(R.overall)}</div></div></div>`);
+  const peopleRows=R.people.map((p,i)=>{
+    const bits=[p.age?p.age+' yrs':'',p.budget?'budget '+money(p.budget):'',p.likes.length?(p.isNew?'':'+ ')+'likes '+p.likes.join(', '):''].filter(Boolean).join(' · ');
+    return `<div class="qa-row"><input type="checkbox" data-qa="p${i}" checked><div class="grow"><b>${p.isNew?'➕ New person':'✏️ Update'} · ${esc(p.name)}</b><div class="sub">${esc(bits)||'no details'}</div></div></div>`}).join('');
+  const giftRows=R.gifts.map((g,i)=>{
+    if(g.kind==='upd'){
+      const c=g.changes,bits=[];
+      if(c.price!=null)bits.push('price → '+money(c.price));if(c.status)bits.push('status → '+STATUS.find(s=>s[0]===c.status)[1]);
+      if(c.target!=null)bits.push('target → '+money(c.target));if(c.ship!=null)bits.push('shipping → '+money(c.ship));if(c.url)bits.push('new link');
+      return `<div class="qa-row"><input type="checkbox" data-qa="g${i}" checked><div class="grow"><b>💲 Update · ${esc(g.gname)}</b><div class="sub">${esc(bits.join(' · '))}</div></div></div>`}
+    const bits=[g.price?money(g.price):'no price',g.ship?'+'+money(g.ship)+' ship':'',g.hist?'was '+money(g.hist[0]):'',g.target?'🎯 '+money(g.target):'',g.where==='store'?'📍 '+(g.store||'in store'):(g.store||host(g.url)),g.url?'🔗 link':''].filter(Boolean).join(' · ');
+    return `<div class="qa-row"><input type="checkbox" data-qa="g${i}" checked><div class="grow"><b>🎁 ${esc(g.name)}</b><div class="sub">${esc(bits)}</div>
+      <select data-qp="g${i}" aria-label="For">${g.pk?'':'<option value="">Choose person…</option>'}${pOpts(g.pk)}</select>
+      <select data-qs="g${i}" aria-label="Status">${STATUS.map(s=>`<option value="${s[0]}" ${s[0]===(g.status||'idea')?'selected':''}>${s[1]}</option>`).join('')}</select></div></div>`}).join('');
+  const any=rows.length||peopleRows||giftRows;
+  sheet(`<h3>✨ Here's what I found</h3>
+  ${any?`${rows.join('')}${peopleRows?`<div class="qa-h">People</div>${peopleRows}`:''}${giftRows?`<div class="qa-h">Gifts</div>${giftRows}`:''}
+    ${R.dupes?`<div class="hint" style="margin-top:10px">${R.dupes} item${R.dupes===1?'':'s'} already on your list with no changes — skipped.</div>`:''}
+    <div class="hint" style="margin-top:8px">Untick anything that looks wrong. You can change who a gift is for and its status here too.</div>`
+  :`<div class="empty"><div class="big">🤔</div><p>I couldn't find anything to add. Try something like:<br><i>Dad likes golf, golf balls $35</i></p></div>`}
+  <div class="row2" style="margin-top:14px"><button class="btn-ghost" data-act="qaBack">‹ Edit text</button>${any?`<button class="btn-main" data-act="qaSave">Save</button>`:''}</div>`);
+}
+function qaSave(){
+  const R=QA.res,on=k=>{const c=document.querySelector(`[data-qa="${k}"]`);return c&&c.checked};
+  const map={},touched=new Set();let n=0;
+  if(R.overall&&on('o')){S.budget=R.overall;n++}
+  R.people.forEach((p,i)=>{
+    if(!on('p'+i))return;n++;
+    if(p.isNew){const np={id:uid(),name:p.name,emoji:emojiFor(p.name,p.age),age:p.age||'',budget:p.budget||0,likes:p.likes.slice(),notes:''};S.people.push(np);map[p.key]=np.id;touched.add(np.id)}
+    else{const ex=S.people.find(x=>x.id===p.key);if(!ex)return;if(p.age)ex.age=p.age;if(p.budget)ex.budget=p.budget;ex.likes=(ex.likes||[]).concat(p.likes);touched.add(ex.id)}
+  });
+  R.gifts.forEach((g,i)=>{
+    if(!on('g'+i))return;
+    if(g.kind==='upd'){
+      const ex=S.gifts.find(x=>x.id===g.id);if(!ex)return;const c=g.changes;
+      if(c.price!=null)setPrice(ex,c.price);if(c.status)ex.status=c.status;if(c.url){ex.url=c.url;if(!ex.store)ex.store=host(c.url)}
+      if(c.target!=null)ex.target=c.target;if(c.ship!=null)ex.ship=c.ship;
+      n++;touched.add(ex.pid);return;
+    }
+    const sel=document.querySelector(`[data-qp="g${i}"]`);let pid=sel&&sel.value;
+    if(pid&&pid.startsWith('new:'))pid=map[pid];
+    if(!pid)return;
+    const st=document.querySelector(`[data-qs="g${i}"]`).value;
+    const hist=g.hist?[{p:g.hist[0],d:today()},{p:g.hist[1],d:today()}]:(g.price?[{p:g.price,d:today()}]:[]);
+    S.gifts.push({id:uid(),pid,name:g.name,url:g.url,where:g.where,store:g.store||(g.where==='online'?host(g.url):''),price:g.price,ship:g.ship,target:g.target,status:st,notes:'',history:hist,added:today()});
+    n++;touched.add(pid);
+  });
+  save();closeSheet();QA.text='';QA.res=null;
+  if(touched.size===1)view={t:'person',id:[...touched][0]};
+  render();toast(n?`Saved ${n} change${n===1?'':'s'} ✓`:'Nothing saved');
+}
+
 /* ---------- events ---------- */
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-act]');if(!t)return;
@@ -417,6 +689,12 @@ document.addEventListener('click',e=>{
     case'editGift':giftForm(gift());break;
     case'delGift':if(confirm('Delete this gift?')){S.gifts=S.gifts.filter(g=>g.id!==id);save();closeSheet();render()}break;
     case'price':priceSheet(gift());break;
+    case'hist':historySheet(gift());break;
+    case'delHist':{const g=gift();g.history.splice(+t.dataset.i,1);const l=g.history[g.history.length-1];if(l)g.price=l.p;save();render();historySheet(g);break}
+    case'quick':quickSheet(view.t==='person'?view.id:null);break;
+    case'qaParse':QA.text=$('#qa').value;QA.res=parseText(QA.text,QA.def);qaPreview();break;
+    case'qaBack':quickSheet(QA.def);break;
+    case'qaSave':qaSave();break;
     case'cycle':{const g=gift();const i=STATUS.findIndex(s=>s[0]===g.status);g.status=STATUS[(i+1)%STATUS.length][0];save();render();break}
     case'filter':filter=t.dataset.f;render();break;
     case'suggest':suggestSheet(person());break;
