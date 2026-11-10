@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07130e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Spender Bender">
+<title>Spender Bender</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%81%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#07130e; --bg2:#0b1d14; --card:#0f2419; --card2:#153222; --line:#1f4630;
+  --text:#e9f5ec; --muted:#8fb09b; --green:#2f8f5b; --mint:#7be0a6;
+  --red:#e5586a; --gold:#f2c14e; --radius:18px;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,sans-serif}
+body{min-height:100vh;background:
+  radial-gradient(900px 400px at 85% -10%,rgba(47,143,91,.28),transparent 60%),
+  radial-gradient(700px 400px at -10% 10%,rgba(229,88,106,.10),transparent 60%),var(--bg);
+  background-attachment:fixed}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--mint);text-decoration:none}
+#app{max-width:640px;margin:0 auto;padding:16px 16px calc(96px + var(--safe-b))}
+h1,h2,h3{margin:0}
+
+/* header */
+.hero{padding:6px 2px 14px}
+.brand{display:flex;justify-content:space-between;align-items:center}
+.brand h1{font-size:22px;letter-spacing:.2px}
+.brand h1 span{color:var(--mint)}
+.count{font-size:13px;color:var(--gold);background:rgba(242,193,78,.1);border:1px solid rgba(242,193,78,.3);padding:4px 10px;border-radius:99px;white-space:nowrap}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.stat{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+.stat small{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.6px}
+.stat b{display:block;font-size:22px;margin-top:2px}
+.stat.warn b{color:var(--red)}
+.stat.good b{color:var(--mint)}
+.bar{height:8px;background:#0a1a12;border-radius:99px;overflow:hidden;margin-top:12px;border:1px solid var(--line)}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--mint));border-radius:99px;transition:width .4s}
+.bar i.over{background:linear-gradient(90deg,#c0394b,var(--red))}
+.bar i.plan{background:repeating-linear-gradient(45deg,var(--green),var(--green) 6px,#287a4e 6px,#287a4e 12px)}
+.barwrap{position:relative}
+.barlbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+
+/* cards */
+.sec{display:flex;justify-content:space-between;align-items:center;margin:20px 2px 10px}
+.sec h2{font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600}
+.card{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.card.tap{cursor:pointer}
+.card.tap:active{transform:scale(.99)}
+.prow{display:flex;gap:12px;align-items:center}
+.avatar{width:46px;height:46px;border-radius:50%;background:var(--bg2);border:1px solid var(--line);display:grid;place-items:center;font-size:24px;flex:none}
+.grow{flex:1;min-width:0}
+.name{font-weight:650;font-size:17px}
+.sub{color:var(--muted);font-size:13px}
+.right{text-align:right;flex:none}
+.right b{font-size:17px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:12px;padding:3px 9px;border-radius:99px;background:var(--bg2);border:1px solid var(--line);color:var(--muted)}
+.chip.btn{cursor:pointer;color:var(--text)}
+.chip.on{background:var(--green);border-color:var(--green);color:#fff}
+.chip.link{color:var(--mint);border-color:rgba(123,224,166,.35)}
+.chip.drop{color:var(--mint);border-color:rgba(123,224,166,.4);background:rgba(123,224,166,.08)}
+.chip.rise{color:var(--red);border-color:rgba(229,88,106,.4);background:rgba(229,88,106,.08)}
+.chip.target{color:var(--gold);border-color:rgba(242,193,78,.4);background:rgba(242,193,78,.08)}
+.st{cursor:pointer;font-weight:600}
+.st.idea{color:#b9c9bf}
+.st.buy{color:var(--gold);border-color:rgba(242,193,78,.4)}
+.st.ordered{color:#7fc4ff;border-color:rgba(127,196,255,.4)}
+.st.delivered{color:var(--mint);border-color:rgba(123,224,166,.4)}
+.st.wrapped{color:#fff;background:var(--green);border-color:var(--green)}
+
+.gift .top{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
+.gift .gname{font-weight:600;font-size:16px}
+.gift .price{font-weight:700;font-size:17px;white-space:nowrap}
+.gift .price s{display:block;color:var(--muted);font-weight:400;font-size:12px;text-align:right}
+.acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.tiny{font-size:13px;padding:7px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);cursor:pointer}
+.tiny:active{background:var(--card2)}
+.notes{color:var(--muted);font-size:13px;margin-top:6px;white-space:pre-wrap}
+
+/* buttons */
+.btn-main{background:linear-gradient(135deg,var(--green),#23764a);border:0;color:#fff;font-weight:650;padding:13px 18px;border-radius:14px;cursor:pointer;width:100%;box-shadow:0 6px 18px rgba(47,143,91,.3)}
+.btn-ghost{background:transparent;border:1px solid var(--line);padding:11px 16px;border-radius:14px;cursor:pointer;color:var(--text)}
+.btn-danger{background:transparent;border:1px solid rgba(229,88,106,.5);color:var(--red);padding:11px 16px;border-radius:14px;cursor:pointer}
+.row2{display:flex;gap:10px}
+.row2>*{flex:1}
+.back{background:none;border:0;color:var(--mint);padding:6px 0;cursor:pointer;font-size:15px}
+.empty{text-align:center;color:var(--muted);padding:34px 10px;border:1px dashed var(--line);border-radius:var(--radius)}
+.empty .big{font-size:40px}
+
+/* nav */
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(7,19,14,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:8px 10px calc(8px + var(--safe-b));z-index:20}
+nav div{max-width:640px;margin:0 auto;display:flex;gap:6px}
+nav button{flex:1;background:none;border:0;color:var(--muted);padding:6px 0;border-radius:12px;font-size:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button span{font-size:21px}
+nav button.on{color:var(--mint);background:rgba(47,143,91,.15)}
+
+/* sheet */
+#sheet{position:fixed;inset:0;z-index:50;display:none}
+#sheet.open{display:block}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.6)}
+.panel{position:absolute;left:0;right:0;bottom:0;max-width:640px;margin:0 auto;max-height:92vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;padding:18px 16px calc(20px + var(--safe-b));animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.panel h3{font-size:19px;margin-bottom:12px}
+label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:12px 0 5px}
+input,select,textarea{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;outline:none;font-size:16px}
+input:focus,select:focus,textarea:focus{border-color:var(--mint)}
+textarea{min-height:70px;resize:vertical}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+.sugg{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.sugg:last-child{border:0}
+.sugg .t{flex:1;min-width:0}
+.sugg h4{margin:16px 0 2px;font-size:13px;color:var(--gold);text-transform:uppercase;letter-spacing:.6px}
+.plus{width:38px;height:38px;border-radius:50%;border:0;background:var(--green);color:#fff;font-size:22px;cursor:pointer;flex:none}
+.plus.done{background:var(--bg2);color:var(--mint);border:1px solid var(--line)}
+.snow{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.snow i{position:absolute;top:-10px;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.35);animation:fall linear infinite}
+@keyframes fall{to{transform:translateY(105vh) translateX(30px)}}
+#app,nav{position:relative;z-index:1}
+nav{position:fixed}
+@media (prefers-reduced-motion:reduce){.snow{display:none}}
+</style>
+</head>
+<body>
+<div class="snow" id="snow"></div>
+<div id="app"></div>
+<nav><div>
+  <button data-act="nav" data-v="people"><span>👥</span>People</button>
+  <button data-act="nav" data-v="list"><span>🛒</span>Shopping</button>
+  <button data-act="nav" data-v="settings"><span>⚙️</span>Settings</button>
+</div></nav>
+<div id="sheet"></div>
+
+<script>
+/* ---------- storage ---------- */
+const KEY='spender-bender-v1';
+const blank=()=>({budget:0,people:[],gifts:[]});
+let S=load();
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.people&&d.gifts)return d}catch(e){}return blank()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert('Could not save — is storage blocked?')}}
+const uid=()=>Math.random().toString(36).slice(2,10);
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>(+n||0).toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:(+n||0)%1?2:0,maximumFractionDigits:2});
+const num=v=>{const n=parseFloat(String(v).replace(/[^0-9.]/g,''));return isNaN(n)?0:n};
+const today=()=>new Date().toISOString().slice(0,10);
+const STATUS=[['idea','💡 Idea'],['buy','🛍 To buy'],['ordered','📦 Ordered'],['delivered','🏠 Arrived'],['wrapped','🎀 Wrapped']];
+const SPENT=['ordered','delivered','wrapped'];
+const total=g=>num(g.price)+num(g.ship);
+const isSpent=g=>SPENT.includes(g.status);
+function host(u){try{return new URL(u).hostname.replace(/^www\./,'')}catch(e){return''}}
+function fixUrl(u){u=(u||'').trim();if(!u)return'';return /^https?:\/\//i.test(u)?u:'https://'+u}
+function daysToXmas(){const n=new Date();let x=new Date(n.getFullYear(),11,25);if(n>x)x=new Date(n.getFullYear()+1,11,25);return Math.ceil((x-n)/864e5)}
+function personStats(p){
+  const gs=S.gifts.filter(g=>g.pid===p.id);
+  const spent=gs.filter(isSpent).reduce((a,g)=>a+total(g),0);
+  const planned=gs.filter(g=>!isSpent(g)&&g.status!=='idea').reduce((a,g)=>a+total(g),0);
+  const ideas=gs.filter(g=>g.status==='idea').reduce((a,g)=>a+total(g),0);
+  return{gs,spent,planned,ideas,committed:spent+planned};
+}
+function allStats(){
+  let spent=0,planned=0,ideas=0,budgets=0;
+  S.people.forEach(p=>{const s=personStats(p);spent+=s.spent;planned+=s.planned;ideas+=s.ideas;budgets+=num(p.budget)});
+  const cap=num(S.budget)||budgets;
+  return{spent,planned,ideas,cap,left:cap-spent-planned};
+}
+function priceTrend(g){
+  const h=g.history||[];if(h.length<2)return null;
+  const d=h[h.length-1].p-h[0].p;if(!d)return null;return d;
+}
+
+/* ---------- state / routing ---------- */
+let view={t:'people'};
+let filter='all';
+function go(v){view=v;render();window.scrollTo(0,0)}
+
+/* ---------- render ---------- */
+function render(){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===(view.t==='person'?'people':view.t)));
+  const app=$('#app');
+  app.innerHTML=header()+({people:vPeople,person:vPerson,list:vList,settings:vSettings}[view.t])();
+}
+function header(){
+  const a=allStats();
+  const pct=a.cap?Math.min(100,(a.spent/a.cap)*100):0;
+  const pct2=a.cap?Math.min(100-pct,(a.planned/a.cap)*100):0;
+  const over=a.cap&&a.left<0;
+  return `<div class="hero">
+    <div class="brand"><h1>🎄 Spender <span>Bender</span></h1><div class="count">🎅 ${daysToXmas()} days</div></div>
+    <div class="stats">
+      <div class="stat good"><small>Spent</small><b>${money(a.spent)}</b></div>
+      <div class="stat ${over?'warn':''}"><small>${over?'Over budget':'Left to spend'}</small><b>${a.cap?money(Math.abs(a.left)):'—'}</b></div>
+    </div>
+    <div class="bar" style="display:flex"><i class="${over?'over':''}" style="width:${pct}%"></i><i class="plan" style="width:${pct2}%;border-radius:0"></i></div>
+    <div class="barlbl"><span>${money(a.spent)} spent · ${money(a.planned)} planned</span><span>${a.cap?'of '+money(a.cap):'set a budget in Settings'}</span></div>
+  </div>`;
+}
+function vPeople(){
+  const cards=S.people.map(p=>{
+    const s=personStats(p),b=num(p.budget),over=b&&s.committed>b;
+    const pct=b?Math.min(100,s.committed/b*100):0;
+    const n=s.gs.length,done=s.gs.filter(g=>g.status==='wrapped').length;
+    return `<div class="card tap" data-act="person" data-id="${p.id}">
+      <div class="prow"><div class="avatar">${esc(p.emoji||'🎁')}</div>
+        <div class="grow"><div class="name">${esc(p.name)}</div>
+          <div class="sub">${p.age?esc(p.age)+' yrs · ':''}${n} gift${n===1?'':'s'}${n?` · ${done} wrapped`:''}</div></div>
+        <div class="right"><b>${money(s.committed)}</b><div class="sub">${b?'of '+money(b):'no budget'}</div></div></div>
+      ${b?`<div class="bar"><i class="${over?'over':''}" style="width:${pct}%"></i></div>`:''}
+    </div>`}).join('');
+  return `<div class="sec"><h2>Gift recipients</h2></div>
+    ${cards||`<div class="empty"><div class="big">🎁</div><p>No one on your list yet.<br>Add the first person you're shopping for.</p></div>`}
+    <button class="btn-main" data-act="addPerson">＋ Add person</button>`;
+}
+function giftCard(g,showPerson){
+  const p=S.people.find(x=>x.id===g.pid);
+  const tr=priceTrend(g);
+  const h=host(g.url);
+  const atTarget=num(g.target)&&num(g.price)&&num(g.price)<=num(g.target);
+  return `<div class="card gift">
+    <div class="top"><div class="grow"><div class="gname">${esc(g.name)}</div>
+      ${showPerson&&p?`<div class="sub">for ${esc(p.emoji||'')} ${esc(p.name)}</div>`:''}</div>
+      <div class="price">${num(g.price)?money(g.price):'—'}${num(g.ship)?`<s>+ ${money(g.ship)} ship</s>`:''}</div></div>
+    <div class="chips">
+      <span class="chip btn st ${g.status}" data-act="cycle" data-id="${g.id}">${STATUS.find(s=>s[0]===g.status)[1]}</span>
+      <span class="chip">${g.where==='store'?'📍':'🌐'} ${esc(g.store||(g.where==='store'?'In store':h)||'Online')}</span>
+      ${tr?`<span class="chip ${tr<0?'drop':'rise'}">${tr<0?'▼':'▲'} ${money(Math.abs(tr))} since added</span>`:''}
+      ${atTarget?`<span class="chip target">🎯 At target ${money(g.target)}</span>`:(num(g.target)?`<span class="chip">target ${money(g.target)}</span>`:'')}
+      ${g.url?`<a class="chip link" href="${esc(g.url)}" target="_blank" rel="noopener noreferrer">${esc(h||'link')} ↗</a>`:''}
+    </div>
+    ${g.notes?`<div class="notes">${esc(g.notes)}</div>`:''}
+    <div class="acts"><button class="tiny" data-act="price" data-id="${g.id}">💲 Update price</button>
+      <button class="tiny" data-act="editGift" data-id="${g.id}">✏️ Edit</button></div>
+  </div>`;
+}
+function vPerson(){
+  const p=S.people.find(x=>x.id===view.id);if(!p){view={t:'people'};return vPeople()}
+  const s=personStats(p),b=num(p.budget);
+  const left=b-s.committed;
+  const gifts=s.gs.slice().sort((a,b)=>STATUS.findIndex(x=>x[0]===a.status)-STATUS.findIndex(x=>x[0]===b.status));
+  return `<button class="back" data-act="nav" data-v="people">‹ All people</button>
+  <div class="card"><div class="prow"><div class="avatar">${esc(p.emoji||'🎁')}</div>
+    <div class="grow"><div class="name">${esc(p.name)}</div><div class="sub">${p.age?esc(p.age)+' yrs old':'age not set'}</div></div>
+    <button class="tiny" data-act="editPerson" data-id="${p.id}">Edit</button></div>
+    ${(p.likes||[]).length?`<div class="chips">${p.likes.map(l=>`<span class="chip">${esc(l)}</span>`).join('')}</div>`:''}
+    ${p.notes?`<div class="notes">${esc(p.notes)}</div>`:''}
+    <div class="stats" style="margin-top:12px">
+      <div class="stat"><small>Committed</small><b>${money(s.committed)}</b></div>
+      <div class="stat ${b&&left<0?'warn':'good'}"><small>${b?(left<0?'Over by':'Left'):'Budget'}</small><b>${b?money(Math.abs(left)):'—'}</b></div>
+    </div></div>
+  <div class="row2" style="margin-bottom:6px"><button class="btn-main" data-act="addGift" data-pid="${p.id}">＋ Add gift</button>
+    <button class="btn-ghost" data-act="suggest" data-id="${p.id}">✨ Ideas</button></div>
+  <div class="sec"><h2>Gifts (${gifts.length})</h2></div>
+  ${gifts.map(g=>giftCard(g)).join('')||`<div class="empty"><div class="big">✨</div><p>Nothing here yet. Add a gift, or tap <b>Ideas</b> for suggestions based on ${esc(p.name)}'s age &amp; interests.</p></div>`}`;
+}
+function vList(){
+  const f={all:()=>true,todo:g=>g.status==='idea'||g.status==='buy',ordered:g=>g.status==='ordered'||g.status==='delivered',wrapped:g=>g.status==='wrapped',store:g=>g.where==='store'&&!isSpent(g),drops:g=>(priceTrend(g)||0)<0||(num(g.target)&&num(g.price)<=num(g.target))};
+  const chips=[['all','All'],['todo','Still to buy'],['ordered','On the way'],['wrapped','Wrapped'],['store','📍 In-store'],['drops','🔥 Deals']];
+  const gs=S.gifts.filter(f[filter]).sort((a,b)=>(S.people.find(p=>p.id===a.pid)?.name||'').localeCompare(S.people.find(p=>p.id===b.pid)?.name||''));
+  return `<div class="sec"><h2>Shopping list</h2><span class="sub">${gs.length} item${gs.length===1?'':'s'} · ${money(gs.reduce((a,g)=>a+total(g),0))}</span></div>
+  <div class="chips" style="margin:0 0 14px">${chips.map(c=>`<span class="chip btn ${filter===c[0]?'on':''}" data-act="filter" data-f="${c[0]}">${c[1]}</span>`).join('')}</div>
+  ${gs.map(g=>giftCard(g,true)).join('')||`<div class="empty"><div class="big">🛒</div><p>Nothing matches this filter.</p></div>`}`;
+}
+function vSettings(){
+  const a=allStats();
+  return `<div class="sec"><h2>Settings</h2></div>
+  <div class="card"><label style="margin-top:0">Overall Christmas budget</label>
+    <input id="budget" inputmode="decimal" placeholder="Leave blank to add up each person's budget" value="${num(S.budget)||''}">
+    <div class="hint">Currently using ${money(a.cap)}${num(S.budget)?'':' (sum of individual budgets)'}.</div>
+    <button class="btn-main" style="margin-top:12px" data-act="saveBudget">Save budget</button></div>
+  <div class="card"><h3 style="font-size:16px">Backup</h3>
+    <p class="sub">Your list is saved only in this browser. Export a backup now and then — especially before clearing browser data or switching phones.</p>
+    <div class="row2"><button class="btn-ghost" data-act="export">⬇️ Export</button><button class="btn-ghost" data-act="import">⬆️ Import</button></div>
+    <input type="file" id="file" accept="application/json" style="display:none"></div>
+  <div class="card"><h3 style="font-size:16px">Status guide</h3>
+    <p class="sub">💡 Idea &amp; 🛍 To buy count as <b>planned</b>. 📦 Ordered, 🏠 Arrived &amp; 🎀 Wrapped count as <b>spent</b>. Tap a status chip on any gift to move it forward.</p></div>
+  <button class="btn-danger" data-act="reset" style="width:100%">Erase everything</button>`;
+}
+
+/* ---------- sheets ---------- */
+function sheet(html){const s=$('#sheet');s.innerHTML=`<div class="scrim" data-act="close"></div><div class="panel">${html}</div>`;s.classList.add('open');document.body.style.overflow='hidden'}
+function closeSheet(){$('#sheet').classList.remove('open');$('#sheet').innerHTML='';document.body.style.overflow=''}
+
+const EMOJIS=['🎁','👩','👨','👧','👦','👶','👵','👴','🧑','🐶','🐱','🎅','🤶','⭐'];
+const LIKE_CHIPS=['Gaming','Books','Cooking','Baking','Coffee','Fitness','Hiking','Music','Art','Tech','Movies','Pets','Gardening','Travel','Fashion','Skincare','Sports','LEGO','Board games','Photography','Cozy home','Wine','Golf','Fishing','Cars','Science','Dolls','Camping'];
+
+function personForm(p){
+  p=p||{};
+  sheet(`<h3>${p.id?'Edit person':'Add person'}</h3>
+  <form data-form="person" data-id="${p.id||''}">
+    <label>Name</label><input name="name" required value="${esc(p.name)}" placeholder="Mom, Jake, Aunt Lisa…">
+    <label>Emoji</label><select name="emoji">${EMOJIS.map(e=>`<option ${e===(p.emoji||'🎁')?'selected':''}>${e}</option>`).join('')}</select>
+    <div class="row2"><div><label>Age</label><input name="age" inputmode="numeric" value="${esc(p.age)}" placeholder="e.g. 8"></div>
+    <div><label>Budget ($)</label><input name="budget" inputmode="decimal" value="${num(p.budget)||''}" placeholder="e.g. 100"></div></div>
+    <label>Likes &amp; interests</label><input name="likes" id="likes" value="${esc((p.likes||[]).join(', '))}" placeholder="comma separated — or tap below">
+    <div class="chips">${LIKE_CHIPS.map(l=>`<span class="chip btn" data-act="addLike" data-l="${l}">${l}</span>`).join('')}</div>
+    <div class="hint">These power the ✨ Ideas button.</div>
+    <label>Notes</label><textarea name="notes" placeholder="Sizes, allergies, things they already own, hints they dropped…">${esc(p.notes)}</textarea>
+    <div class="row2" style="margin-top:16px"><button type="button" class="btn-ghost" data-act="close">Cancel</button><button class="btn-main">Save</button></div>
+    ${p.id?`<button type="button" class="btn-danger" style="width:100%;margin-top:10px" data-act="delPerson" data-id="${p.id}">Delete person &amp; their gifts</button>`:''}
+  </form>`);
+}
+function giftForm(g,pid){
+  g=g||{status:'idea',where:'online'};
+  sheet(`<h3>${g.id?'Edit gift':'Add gift'}</h3>
+  <form data-form="gift" data-id="${g.id||''}" data-pid="${g.pid||pid}">
+    <label>Gift</label><input name="name" required value="${esc(g.name)}" placeholder="What is it?">
+    <label>Product link</label><input name="url" type="text" inputmode="url" autocapitalize="off" autocorrect="off" value="${esc(g.url)}" placeholder="Paste a link (amazon, target, etsy…)">
+    <div class="row2"><div><label>Where</label><select name="where"><option value="online" ${g.where!=='store'?'selected':''}>🌐 Online</option><option value="store" ${g.where==='store'?'selected':''}>📍 In store</option></select></div>
+    <div><label>Store / site</label><input name="store" value="${esc(g.store)}" placeholder="Auto from link"></div></div>
+    <div class="row2"><div><label>Price ($)</label><input name="price" inputmode="decimal" value="${num(g.price)||''}"></div>
+    <div><label>Shipping/tax ($)</label><input name="ship" inputmode="decimal" value="${num(g.ship)||''}"></div></div>
+    <label>Target price ($)</label><input name="target" inputmode="decimal" value="${num(g.target)||''}" placeholder="Buy when it drops to…">
+    <label>Status</label><select name="status">${STATUS.map(s=>`<option value="${s[0]}" ${s[0]===g.status?'selected':''}>${s[1]}</option>`).join('')}</select>
+    <label>Notes</label><textarea name="notes" placeholder="Size, color, order #, tracking, arrival date, promo code…">${esc(g.notes)}</textarea>
+    <div class="row2" style="margin-top:16px"><button type="button" class="btn-ghost" data-act="close">Cancel</button><button class="btn-main">Save</button></div>
+    ${g.id?`<button type="button" class="btn-danger" style="width:100%;margin-top:10px" data-act="delGift" data-id="${g.id}">Delete gift</button>`:''}
+  </form>`);
+}
+function priceSheet(g){
+  const h=(g.history||[]).slice().reverse();
+  sheet(`<h3>Update price</h3><p class="sub" style="margin-top:-6px">${esc(g.name)}</p>
+  <form data-form="price" data-id="${g.id}">
+    <label>New price ($)</label><input name="price" inputmode="decimal" autofocus value="${num(g.price)||''}">
+    <button class="btn-main" style="margin-top:14px">Log new price</button>
+  </form>
+  ${h.length?`<label>History</label>${h.map(x=>`<div class="sugg"><div class="t">${esc(x.d)}</div><b>${money(x.p)}</b></div>`).join('')}`:''}
+  <button class="btn-ghost" style="width:100%;margin-top:12px" data-act="close">Close</button>`);
+}
+
+/* ---------- gift idea engine ---------- */
+// [category, keywords, [[idea, minAge, maxAge, approxPrice], ...]]
+const IDEAS=[
+['Gaming',['game','gaming','nintendo','xbox','playstation','minecraft','fortnite','zelda','mario','roblox','video'],[['Nintendo eShop / PSN / Xbox gift card',7,99,25],['Wireless game controller',8,99,50],['Gaming headset',10,99,60],['Minecraft or Mario themed LEGO set',6,16,30],['RGB desk mat / mouse pad',12,99,25],['Controller charging dock',10,99,25],['Retro handheld console',12,99,60]]],
+['Books',['book','read','novel','fantasy','manga','comic','story'],[['Illustrated picture-book bundle',2,7,25],['Box set of a favorite series',8,14,40],['Bestselling novel (hardcover)',15,99,25],['Kindle or e-reader',12,99,100],['Bookmark + reading light set',8,99,18],['Book subscription box',10,99,30],['Graphic novel / manga starter set',9,25,30]]],
+['Cooking & baking',['cook','bake','baking','kitchen','chef','food','grill','bbq'],[['Kids baking kit',5,12,25],['Cast-iron skillet',18,99,40],['Air fryer',20,99,80],['Quality chef knife',18,99,60],['Stand-mixer attachment',20,99,50],['Cookbook from a favorite chef',16,99,28],['Spice rack or gourmet spice set',18,99,35],['BBQ tool set / meat thermometer',20,99,30]]],
+['Coffee & tea',['coffee','tea','espresso','latte','cafe'],[['Specialty coffee subscription',18,99,40],['Milk frother',18,99,25],['Insulated travel mug',14,99,30],['Pour-over set',18,99,45],['Loose-leaf tea sampler',16,99,28],['Mug warmer + cozy mug',16,99,30]]],
+['Fitness',['fit','gym','run','running','yoga','workout','lift','pilates','cycling','bike'],[['Fitness tracker / smartwatch',14,99,100],['Resistance bands set',14,99,25],['Insulated water bottle',10,99,30],['Yoga mat',14,99,35],['Massage gun',18,99,60],['Running socks & gloves bundle',14,99,30],['Adjustable dumbbells',18,99,150]]],
+['Outdoors',['hik','outdoor','camp','trail','nature','climb','adventure','backpack'],[['Headlamp',10,99,30],['Insulated camp mug / flask',12,99,25],['Packable rain jacket',12,99,70],['Portable hammock',14,99,40],['Trail snacks & first-aid kit',12,99,30],['Binoculars',8,99,40],['Kid explorer kit (compass, bug jar)',4,10,22]]],
+['Music',['music','guitar','piano','sing','band','vinyl','concert','headphone','dj'],[['Wireless earbuds / headphones',12,99,80],['Bluetooth speaker',10,99,45],['Vinyl record of a favorite album',14,99,30],['Beginner ukulele',8,99,40],['Guitar picks, capo & strap set',12,99,25],['Kid xylophone or mini keyboard',3,9,30],['Concert tickets (check dates!)',14,99,90]]],
+['Art & crafts',['art','draw','paint','craft','sketch','knit','crochet','sew','diy','pottery'],[['Washable markers & coloring set',3,9,18],['Watercolor / acrylic starter kit',8,99,35],['Sketchbook + pencil set',8,99,28],['Crochet or knitting starter kit',10,99,30],['Air-dry clay / pottery kit',7,99,25],['Drawing tablet',12,99,60],['Cricut-style vinyl or craft supplies',12,99,30]]],
+['Tech & gadgets',['tech','gadget','computer','phone','smart','electronic','robot','coding'],[['Portable power bank',12,99,30],['Smart plug / smart bulb set',18,99,25],['Wireless charging pad',14,99,25],['Tile / AirTag tracker',14,99,30],['Mini projector',16,99,90],['Coding robot kit',7,14,60],['Mechanical keyboard',14,99,70]]],
+['Movies & TV',['movie','film','tv','show','netflix','anime','disney','marvel','star wars'],[['Streaming gift card',13,99,30],['Popcorn maker + movie-night bundle',8,99,35],['Collectible figure / Funko Pop',6,99,15],['Fuzzy movie blanket',8,99,30],['Blu-ray box set',14,99,40],['Fandom hoodie or tee',8,99,35]]],
+['Pets',['dog','cat','pet','puppy','kitten','animal'],[['Custom pet portrait / ornament',16,99,35],['Interactive pet toy',12,99,22],['Cozy pet bed',16,99,40],['Premium treats sampler',12,99,20],['Pet camera / treat dispenser',18,99,60],['Stuffed animal look-alike',3,10,25]]],
+['Gardening',['garden','plant','flower','herb','succulent'],[['Indoor herb garden kit',14,99,40],['Quality gardening gloves + tools',18,99,35],['Self-watering planters',14,99,30],['Seed subscription / bulb collection',16,99,25],['Kid grow-your-own kit',5,10,18],['Grow light',16,99,40]]],
+['Travel',['travel','trip','vacation','passport','beach'],[['Packing cubes set',16,99,25],['Luggage tracker + tag',16,99,30],['Travel neck pillow & eye mask',14,99,30],['Scratch-off world map',14,99,25],['Passport holder (personalized)',14,99,22],['Compact travel adapter',16,99,20]]],
+['Fashion',['fashion','style','clothes','jewelry','watch','shoes','sneaker','bag','scarf'],[['Cozy scarf & beanie set',10,99,35],['Personalized initial necklace',12,99,40],['Quality leather wallet / cardholder',16,99,45],['Sneaker care kit',14,99,25],['Statement tote or crossbody bag',16,99,50],['Gift card to a favorite store',12,99,50]]],
+['Skincare & beauty',['beauty','skin','makeup','perfume','spa','nail','hair','self-care','selfcare'],[['Spa-at-home gift set',14,99,40],['Silk pillowcase / sleep mask',14,99,30],['Skincare starter set',14,99,45],['Bath bombs & candles',10,99,25],['Heated eye mask / foot spa',18,99,35],['Hair tools (dryer / curling wand)',14,99,70],['Teen makeup palette',12,99,30]]],
+['Sports',['sport','football','basketball','soccer','baseball','hockey','tennis','nfl','nba','mlb','swim','team'],[['Team jersey or hoodie',8,99,60],['Sports ball for their game',5,99,25],['Gear bag / duffel',10,99,35],['Tickets to a local game',10,99,80],['Training aid (rebounder, agility ladder)',9,99,30],['Signed memorabilia / poster',10,99,40]]],
+['LEGO & building',['lego','build','block','construction','model','minecraft','magnet'],[['LEGO set matching their favorite theme',5,99,40],['Magnetic tiles set',3,10,40],['Model kit (cars, planes, ships)',10,99,35],['Buildable marble run',6,12,35],['Engineering / STEM building kit',8,15,35]]],
+['Board games & puzzles',['board game','puzzle','card game','chess','trivia','jigsaw','tabletop'],[['Family strategy board game',8,99,35],['1000-piece puzzle (their favorite scene)',10,99,22],['Card game for a group',10,99,15],['Premium chess / backgammon set',10,99,50],['Escape-room-in-a-box',12,99,25],['Preschool matching games',3,6,18]]],
+['Photography',['photo','camera','video','film','vlog'],[['Instant camera + film',8,99,90],['Mini tripod / phone gimbal',14,99,35],['Photo book of the year',16,99,35],['Ring light',12,99,30],['Digital photo frame',16,99,70],['Kid-friendly digital camera',5,10,45]]],
+['Cozy home',['home','cozy','decor','candle','blanket','house','interior','organiz'],[['Weighted or oversized throw blanket',14,99,45],['Scented candle trio',16,99,30],['Personalized family photo ornament',16,99,25],['LED string lights',10,99,20],['Robe & slippers set',16,99,50],['Aroma diffuser',16,99,30],['Night-light lamp',2,10,20]]],
+['Wine, cocktails & beer',['wine','cocktail','beer','whiskey','whisky','bar','drink','spirits'],[['Cocktail shaker & tools set',21,99,35],['Insulated wine tumblers',21,99,30],['Whiskey stones & glass set',21,99,30],['Craft beer / hot-sauce-of-the-month club',21,99,40],['Wine aerator / opener set',21,99,28],['Bitters & syrup sampler',21,99,30]]],
+['Golf',['golf'],[['Dozen premium golf balls',16,99,40],['Rangefinder',18,99,120],['Golf glove + tee set',16,99,25],['Putting mat',16,99,45],['Golf towel & divot tool set',16,99,20]]],
+['Fishing',['fish','angl'],[['Tackle box starter pack',10,99,35],['Polarized sunglasses',14,99,40],['Fishing multi-tool / pliers',14,99,25],['Kid-sized rod & reel combo',5,12,30],['Insulated fishing cooler bag',16,99,35]]],
+['Cars',['car','truck','auto','motor','race','f1','garage'],[['Car detailing kit',16,99,45],['Dash cam',18,99,70],['Portable jump starter',18,99,60],['Premium phone mount + charger',16,99,30],['Hot Wheels mega track set',4,12,35],['RC car',6,99,45]]],
+['Science',['science','space','astronomy','chemistry','dino','stem','experiment','bug'],[['Beginner telescope',8,99,70],['Crystal-growing / chemistry kit',7,14,25],['Dinosaur dig kit',4,10,20],['Star projector night-light',5,99,30],['Microscope for kids',7,14,40],['Planetarium subscription box',8,99,30]]],
+['Dolls & pretend play',['doll','barbie','pretend','princess','dress','kitchen toy','play'],[['Fashion doll + accessories',4,10,25],['Dress-up costume trunk',3,8,35],['Play kitchen accessories',2,6,28],['Doll house furniture set',4,9,35],['Doctor / vet pretend-play kit',3,8,25],['Squishmallow plush',3,99,25]]]
+];
+const BY_AGE=[
+['Little ones',0,3,[['Soft board books set',0,3,20],['Wooden stacking / shape toys',1,3,25],['Sensory play set',1,3,25],['Ride-on toy',1,3,45],['Cozy pajamas & plush',0,3,30]]],
+['Kids',4,9,[['Art supply caddy',4,9,25],['Craft & science kit',5,9,25],['Balance bike or scooter',4,9,55],['Family board game',5,9,25],['Cozy hoodie in a favorite character',4,9,28]]],
+['Tweens & teens',10,17,[['Gift card to a favorite shop',10,17,25],['Wireless earbuds',10,17,50],['Hoodie / sweatshirt',10,17,45],['Room LED lights / neon sign',10,17,30],['Instant camera',10,17,80]]],
+['Adults',18,64,[['Cozy robe or slippers',18,64,45],['Experience gift (class, dinner, show)',18,64,80],['Quality insulated tumbler',18,64,35],['Personalized photo gift',18,64,30],['Gourmet snack / chocolate box',18,64,35]]],
+['65+',65,120,[['Photo frame that rotates family photos',65,120,80],['Heated throw blanket',65,120,50],['Large-print puzzle or crossword set',65,120,20],['Custom photo book',65,120,35],['Warm slippers & thermal socks',65,120,30]]]
+];
+function suggestFor(p){
+  const age=p.age===''||p.age==null?null:num(p.age);
+  const okAge=i=>age==null||(age>=i[1]&&age<=i[2]);
+  const out=[],seen=new Set(S.gifts.filter(g=>g.pid===p.id).map(g=>g.name.toLowerCase()));
+  const used=new Set();
+  const addGroup=(title,items)=>{const it=items.filter(okAge).filter(i=>!seen.has(i[0].toLowerCase())&&!used.has(i[0]));if(it.length){it.forEach(i=>used.add(i[0]));out.push({title,items:it.slice(0,6)})}};
+  const unmatched=[];
+  (p.likes||[]).forEach(l=>{
+    const t=l.toLowerCase().trim();if(t.length<3){return}
+    let hit=false;
+    IDEAS.forEach(c=>{if(c[1].some(w=>t.includes(w)||w.includes(t))||c[0].toLowerCase().includes(t)){hit=true;addGroup(`Because they like ${l}`,c[2])}});
+    if(!hit)unmatched.push(l);
+  });
+  BY_AGE.forEach(a=>{if(age==null||(age>=a[1]&&age<=a[2]))addGroup(age==null?`Crowd-pleasers: ${a[0]}`:`Safe bets for age ${age}`,a[3])});
+  return{groups:out,unmatched,age};
+}
+function suggestSheet(p){
+  const r=suggestFor(p);
+  const q=encodeURIComponent;
+  sheet(`<h3>✨ Ideas for ${esc(p.name)}</h3>
+  <p class="sub" style="margin-top:-6px">${r.age!=null?`Age ${r.age}`:'No age set'} · ${(p.likes||[]).length?esc(p.likes.join(', ')):'no interests yet — edit the person to add some'}. Prices are rough estimates.</p>
+  ${r.groups.map(g=>`<h4 class="sugg" style="border:0;padding:0"></h4><div style="color:var(--gold);font-size:13px;text-transform:uppercase;letter-spacing:.6px;margin:16px 0 2px">${esc(g.title)}</div>
+    ${g.items.map(i=>`<div class="sugg"><div class="t"><div style="font-weight:600">${esc(i[0])}</div><div class="sub">~${money(i[3])} · <a href="https://www.google.com/search?tbm=shop&q=${q(i[0])}" target="_blank" rel="noopener noreferrer">compare prices ↗</a></div></div>
+    <button class="plus" data-act="addIdea" data-id="${p.id}" data-n="${esc(i[0])}" data-p="${i[3]}">＋</button></div>`).join('')}`).join('')||'<div class="empty">No ideas left — you have them all covered!</div>'}
+  ${r.unmatched.length?`<div style="color:var(--gold);font-size:13px;text-transform:uppercase;letter-spacing:.6px;margin:16px 0 6px">Search for the rest</div>
+    <div class="chips">${r.unmatched.map(l=>`<a class="chip link" target="_blank" rel="noopener noreferrer" href="https://www.google.com/search?q=${q('gift ideas for '+(r.age!=null?r.age+' year old ':'')+'who likes '+l)}">${esc(l)} ↗</a>`).join('')}</div>`:''}
+  <button class="btn-ghost" style="width:100%;margin-top:16px" data-act="close">Done</button>`);
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]');if(!t)return;
+  const a=t.dataset.act,id=t.dataset.id;
+  const gift=()=>S.gifts.find(g=>g.id===id),person=()=>S.people.find(p=>p.id===id);
+  switch(a){
+    case'nav':go({t:t.dataset.v});break;
+    case'close':closeSheet();break;
+    case'person':go({t:'person',id});break;
+    case'addPerson':personForm();break;
+    case'editPerson':personForm(person());break;
+    case'addLike':{const i=$('#likes');const cur=i.value.split(',').map(s=>s.trim()).filter(Boolean);if(!cur.some(c=>c.toLowerCase()===t.dataset.l.toLowerCase())){cur.push(t.dataset.l);i.value=cur.join(', ')}t.classList.add('on');break}
+    case'delPerson':if(confirm('Delete this person and all their gifts?')){S.people=S.people.filter(p=>p.id!==id);S.gifts=S.gifts.filter(g=>g.pid!==id);save();closeSheet();go({t:'people'})}break;
+    case'addGift':giftForm(null,t.dataset.pid);break;
+    case'editGift':giftForm(gift());break;
+    case'delGift':if(confirm('Delete this gift?')){S.gifts=S.gifts.filter(g=>g.id!==id);save();closeSheet();render()}break;
+    case'price':priceSheet(gift());break;
+    case'cycle':{const g=gift();const i=STATUS.findIndex(s=>s[0]===g.status);g.status=STATUS[(i+1)%STATUS.length][0];save();render();break}
+    case'filter':filter=t.dataset.f;render();break;
+    case'suggest':suggestSheet(person());break;
+    case'addIdea':{S.gifts.push({id:uid(),pid:id,name:t.dataset.n,url:'',where:'online',store:'',price:+t.dataset.p,ship:0,target:0,status:'idea',notes:'',history:[{p:+t.dataset.p,d:today()}],added:today()});save();t.classList.add('done');t.textContent='✓';t.disabled=true;render();break}
+    case'saveBudget':S.budget=num($('#budget').value);save();render();break;
+    case'export':{const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});const a2=document.createElement('a');a2.href=URL.createObjectURL(b);a2.download='spender-bender-backup-'+today()+'.json';a2.click();break}
+    case'import':$('#file').click();break;
+    case'reset':if(confirm('Erase ALL people and gifts? This cannot be undone.')){S=blank();save();go({t:'people'})}break;
+  }
+});
+document.addEventListener('change',e=>{
+  if(e.target.id==='file'){
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.people||!d.gifts)throw 0;if(confirm('Replace your current list with this backup?')){S=d;save();go({t:'people'})}}catch(x){alert('That file is not a valid backup.')}};r.readAsText(f);
+  }
+});
+document.addEventListener('submit',e=>{
+  const f=e.target.closest('[data-form]');if(!f)return;e.preventDefault();
+  const d=Object.fromEntries(new FormData(f)),id=f.dataset.id;
+  if(f.dataset.form==='person'){
+    const o={name:d.name.trim(),emoji:d.emoji,age:d.age.trim(),budget:num(d.budget),likes:d.likes.split(',').map(s=>s.trim()).filter(Boolean),notes:d.notes.trim()};
+    if(id)Object.assign(S.people.find(p=>p.id===id),o);else{o.id=uid();S.people.push(o);view={t:'person',id:o.id}}
+  }else if(f.dataset.form==='gift'){
+    const url=fixUrl(d.url),price=num(d.price);
+    const o={name:d.name.trim(),url,where:d.where,store:d.store.trim()||(d.where==='online'?host(url):''),price,ship:num(d.ship),target:num(d.target),status:d.status,notes:d.notes.trim()};
+    if(id){const g=S.gifts.find(x=>x.id===id);if(price!==num(g.price)&&price)(g.history=g.history||[]).push({p:price,d:today()});Object.assign(g,o)}
+    else{o.id=uid();o.pid=f.dataset.pid;o.added=today();o.history=price?[{p:price,d:today()}]:[];S.gifts.push(o)}
+  }else if(f.dataset.form==='price'){
+    const g=S.gifts.find(x=>x.id===id),p=num(d.price);
+    if(p&&p!==num(g.price)){g.price=p;(g.history=g.history||[]).push({p,d:today()})}
+  }
+  save();closeSheet();render();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+
+/* snow */
+(function(){const s=$('#snow');for(let i=0;i<24;i++){const f=document.createElement('i');f.style.left=Math.random()*100+'%';f.style.animationDuration=(9+Math.random()*12)+'s';f.style.animationDelay=(-Math.random()*20)+'s';f.style.opacity=.3+Math.random()*.6;const z=2+Math.random()*4;f.style.width=f.style.height=z+'px';s.appendChild(f)}})();
+
+render();
+</script>
+</body>
+</html>
